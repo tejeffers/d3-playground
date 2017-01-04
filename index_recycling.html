@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.comDist path{
+  stroke: #fff;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+
+.caption {
+	font-family: sans-serif;
+}
+div.mouseover{
+	position: absolute;
+	font-family: sans-serif;
+	font-size: 12px;
+	background: black;
+	background-color: rgba(0,0,0,0.5);
+	border: 1px solid #131313;
+	color: white;
+	padding: 5px 8px;
+	margin-left: 100px;
+	margin-top: 50px;
+	display: none;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v4.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+<div class="mouseover"></div>
+<script>
+
+var width = 960,
+    height = 700;
+var g; // this is the container that will hold the BoroCD
+
+var ext_color_domain = [0, 0.25, 0.50, 0.75, 1.0]
+var legend_labels = ["0%", "7.5%", "15%", "22.5%", "30%"]  
+
+var projection = d3.geoConicConformal()
+      .parallels([40 + 40 / 60, 41 + 2 / 60])
+      .scale(70000)
+      .rotate([74, -40 - 45 / 60]);
+
+var path = d3.geoPath().projection(projection);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var color = d3.scaleThreshold()
+    .domain(d3.range(0, 1))
+    .range(d3.schemeGreens[9]);
+
+
+queue()
+    .defer(d3.json, "http://0.0.0.0:8000/data/community_districts_rates.geojson")
+    .await(ready);
+
+function getColor(d){
+	// set this color spectrum to be dependent
+	// on any parameter of your JSON!
+	
+//    var co = function(d) { return color(d["properties"]["Rate"]};
+	
+var ratio=(d["properties"]["Rate"]); //numbers need to be between 0 and 
+	if(ratio>0){
+		return d3.interpolateGreens(ratio*3.4); //d3.hsl(255-ratio,0.4,0.5);
+	}else{
+		return "lightgrey";
+	}
+}
+
+function ready(error, map) {
+  g=svg.append("g")
+      .attr("class", "comDist")
+    .selectAll("path")
+      .data(map.features)
+    .enter().append("path")
+      .attr("d", path)
+	  .style("fill",function(d){return getColor(d);})
+  	  .on("mouseover",mouseover)
+	  .on("mouseout",mouseout);
+}
+
+function mouseover(d){
+	var text="NY"+d.properties["BoroCD"]+ " : " + (d.properties["Rate"]*100.).toFixed(2) + "%";
+	// you can add any more information to the mouseover
+	// here, using data in your JSON
+	$(".mouseover").html(text);
+	$(".mouseover").css("display","inline");
+}
+
+function mouseout(){
+    d3.select("#arcSelection").remove();
+
+	$(".mouseover").text("");
+	$(".mouseover").css("display","none");
+}
+
+// moves the mouseover box whenever the mouse is moved.
+d3.select('html') // Selects the 'html' element
+  .on('mousemove', function()
+    {
+		var locs=d3.mouse(this);	// get the mouse coordinates
+
+		// add some padding
+		locs[0]+=15;
+		locs[1]+=5;
+
+		$("div.mouseover").css("margin-left",locs[0]);
+		$("div.mouseover").css("margin-top",locs[1]);
+    });
+
+
+   var legend = svg.selectAll("g.legend")
+    .data(ext_color_domain)
+    .enter().append("g")
+    .attr("comDist", "legend");
+
+    var ls_w = 20, ls_h = 20;
+
+    legend.append("rect")
+    .attr("x", 220)
+    .attr("y", function(d, i){ return 200 - (i*ls_h) - 2*ls_h;})
+    .attr("width", ls_w)
+    .attr("height", ls_h)
+    .style("fill", function(d, i) { return d3.interpolateGreens(d); })
+    .style("opacity", 0.8);
+
+    legend.append("text")
+    .attr("x", 250)
+    .attr("y", function(d, i){ return 200 - (i*ls_h) - ls_h - 4;})
+	.attr("class", "caption")
+	.style("font-size", "12px")
+    .text(function(d, i){ return legend_labels[i]; });
+
+	
+	legend.append("text")
+	.attr("class", "caption")
+	.style("font-size", "14px")
+	.attr("x", 80)
+	.attr("y", 70)
+	.attr("fill", "#000")
+	.attr("text-anchor", "start")
+	.attr("font-weight", "bold")
+	.text("Recycling Diversion Rate: Total Recycling / Total Waste");
+
+
+</script>
