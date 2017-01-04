@@ -18,4 +18,4 @@ Projects so far:
 - Records contain 2012 College-bound seniors mean SAT scores taken during SY 2012.
 
 
-![Recycling_Map](https://github.com/tejeffers/d3-playground/blob/master/DiversionRate.png?raw=true =412x328)
+![Recycling_Map](https://github.com/tejeffers/d3-playground/blob/master/diversion_rates.png)
