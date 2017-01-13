@@ -18,5 +18,8 @@ Projects so far:
 	- Data downloaded from [Data.gov](https://catalog.data.gov/dataset/sat-results-e88d7)
 	- Data represents the most recent school level results for New York City on the SAT
 	- Records contain 2012 College-bound seniors mean SAT scores taken during SY 2012.
+	- On click, circles are re-sized and re-colored to reflect average Reading, Math, or Writing SAT scores for each school
+	- Darker blue, orange, or green represents higher reading, math, or writing scores, respectively
 
 
+![SATscores_Map](https://github.com/tejeffers/d3-playground/blob/master/SATscores.png)

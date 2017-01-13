@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.community_districts {
+  fill: #ccc;
+}
+
+.community_districts:hover {
+  fill: orange;
+}
+
+.community_districts-border {
+  fill: none;
+  stroke: #333;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+
+.caption {
+	font-family: sans-serif;
+	font-size: 12px;
+}
+.points {
+	fill: orange;	
+}
+.MathButton {
+	font-family: sans-serif;
+	color:#cc6600;
+	border: 1px solid;
+	border-radius: 5px;
+	background-color:#ccc;
+	font-weight:bold;
+	width:150px;
+}
+.ReadButton {
+	font-family: sans-serif;
+	color:#0066cc;
+	border: 1px solid;
+	border-radius: 5px;
+	background-color:#ccc;
+	font-weight: bold;
+	width:150px;
+}
+.WriteButton {
+	font-family: sans-serif;
+	color:#008040;
+	border: 1px solid;
+	border-radius: 5px;
+	background-color:#ccc;
+	font-weight:bold;
+	width:150px;
+}
+
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  font-family: sans-serif;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.99);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 11px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.5);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+</style>
+<body>
+	
+	
+<div id="option">
+    <input name="updateButton" 
+           type="button" 
+		   class="ReadButton"
+           value="Reading SAT Scores" 
+           onclick="updateReadingData()" />
+</div>
+
+<div id="option">
+    <input name="updateButton"
+           type="button" 
+		   class="MathButton"
+           value="Math SAT Scores" 
+           onclick="updateMathData()" />
+</div>
+
+<div id="option">
+    <input name="updateButton" 
+           type="button" 
+		   class="WriteButton"
+           value="Writing SAT Scores" 
+           onclick="updateWritingData()" />
+</div>
+
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="https://d3js.org/d3-color.v1.min.js"></script>
+<script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+<script>
+
+var width = 960,
+    height = 700;
+
+
+var projection = d3.geo.conicConformal()
+    .parallels([40 + 40 / 60, 41 + 2 / 60])
+    .scale(70000)
+    .rotate([74, -40 - 45 / 60]);
+	
+	
+var path = d3.geo.path()
+    .projection(projection);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+	
+
+
+// try adding legend. Can't get it up to the buttons, though.
+var x = d3.scale.linear()
+    .domain([1, 10])
+    .rangeRound([600, 860]);
+
+var colorRead = d3.scale.threshold()
+    .domain(d3.range(2, 10))
+    .range(d3.schemeBlues[9]);
+
+var tip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(d) {
+		return "<strong>School:</strong> <span style='color:white'>" + d.id + "</span>. <strong>R: </strong> <span style='color:#0066cc'>"+ d.reading + ", </span><strong>W:</strong> <span style='color:#008040'>" + d.writing + ", </span><strong>M:</strong> <span style='color:#cc6600'>" + d.math +"</span>";
+
+    })
+	
+svg.call(tip);
+
+var g = svg.append("g")
+    .attr("class", "key")
+    .attr("transform", "translate(0,40)");
+	
+// /// try to make a legend
+// g.selectAll("rect")
+//   .data(colorRead.range().map(function(d) {
+//       d = colorRead.invertExtent(d);
+//       if (d[0] == null) d[0] = x.domain()[0];
+//       if (d[1] == null) d[1] = x.domain()[1];
+//       return d;
+//     }))
+//   .enter().append("rect")
+//     .attr("height", 8)
+//     .attr("x", function(d) { return console.log(x(d[0])), -400 +  x(d[0]); })
+// 	.attr("y", 50)
+//     .attr("width", function(d) { return x(d[1]) - x(d[0]); })
+//     .attr("fill", function(d) { return colorRead(d[0]); });
+//
+// g.append("text")
+//     .attr("class", "caption")
+//     .attr("x", -350 + x.range()[0])
+//     .attr("y", 45)
+//     .attr("fill", "#000")
+//     .attr("text-anchor", "start")
+//     .attr("font-weight", "bold")
+//     .text("Average Reading SAT Score");
+//
+// g.call(d3.svg.axis(x).orient("bottom") //axis.bottom(x)
+//     .tickSize(13)
+//     .tickFormat(function(x, i) { return i ? x : x + "%"; })
+//     .tickValues(colorRead.domain()))
+//   .select(".domain")
+//     .remove();
+
+	// end of legend
+
+queue()
+	.defer(d3.json, "http://0.0.0.0:8000/json/cdTopo.json")
+	.defer(d3.csv, "schoolScores.csv")
+	.await(ready);
+
+
+	
+function getReadingColor(d){	
+	var ratio=(d); //numbers need to be between 0 and 1
+		if(ratio>0){
+			return d3.interpolateBlues(ratio/679); 
+		}else{
+			return "black";
+		}
+	}
+	
+	function getMathColor(d){	
+		var ratio=(d); //numbers need to be between 0 and 1
+			if(ratio>0){
+				return d3.interpolateOranges(ratio/735); 
+			}else{
+				return "black";
+			}
+		}
+		function getWritingColor(d){	
+			var ratio=(d); //numbers need to be between 0 and 1
+				if(ratio>0){
+					return d3.interpolateGreens(ratio/682); 
+				}else{
+					return "black";
+				}
+			}
+
+
+// Draw the map				
+function ready(error, cdTopo, schoolScores) {
+  if (error) throw error;
+
+  var community_districts = cdTopo.objects.community_districts;
+
+  // strip water counties
+  community_districts.geometries = community_districts.geometries
+    .filter(function(d) { return (d.id / 10000 | 0) !== 99; });
+
+  svg.append("g")
+    .selectAll("path")
+      .data(topojson.feature(cdTopo, community_districts).features)
+    .enter().append("path")
+      .attr("class", "community_districts")
+      .attr("d", path)
+      .append("title")
+      .text(function(d, i) { return d.id; });
+
+  svg.append("path")
+      .attr("class", "community_districts-border")
+      .datum(topojson.mesh(cdTopo, community_districts, function(a, b) { return a !== b; }))
+      .attr("d", path);
+	  
+
+	
+	svg.selectAll("circle")
+  		.data(schoolScores)
+  		.enter()
+  		.append("circle")
+  		.attr("class", "circle")
+  		.attr("cx", function (d) {
+  			return projection([d.lon, d.lat])[0];
+  		})
+  	  	.attr("cy", function (d) {
+  	  		return projection([d.lon, d.lat])[1];
+  	  	})
+		.attr("r", function (d) {
+			return d.reading/100;
+		})
+		.style("fill", function(d){
+			return getReadingColor(d.reading);
+		})
+		.on('mouseover', tip.show)
+		.on('click', tip.show)
+		.on('mouseout', tip.hide);
+	};
+	
+d3.select(self.frameElement).style("height", height + "px");
+
+
+// update circles & colors on button click
+function updateMathData() {
+    var svg = d3.select("body").transition();
+
+    d3.csv("schoolScores.csv", function(schoolScores) {
+        svg.selectAll("circle")
+			.duration(750)
+  		.attr("cx", function (d) {
+  			return projection([d.lon, d.lat])[0];
+  		})
+  	  	.attr("cy", function (d) {
+  	  		return projection([d.lon, d.lat])[1];
+  	  	})
+		.attr("r", function (d) {
+			return d.math/80;
+		})
+		.style("fill", function(d){
+			return getMathColor(d.math);
+		})
+    });
+    }
+function updateWritingData() {
+	var svg = d3.select("body").transition();
+
+	d3.csv("schoolScores.csv", function(schoolScores) {
+	        svg.selectAll("circle")
+				.duration(750)
+	  		.attr("cx", function (d) {
+	  			return projection([d.lon, d.lat])[0];
+	  		})
+	  	  	.attr("cy", function (d) {
+	  	  		return projection([d.lon, d.lat])[1];
+	  	  	})
+			.attr("r", function (d) {
+				return d.writing/80;
+			})
+			.style("fill", function(d){
+				return getWritingColor(d.writing);
+			})
+	    });
+	    }
+function updateReadingData() {
+	var svg = d3.select("body").transition();
+
+	d3.csv("schoolScores.csv", function(schoolScores) {
+		        svg.selectAll("circle")
+					.duration(750)
+		  		.attr("cx", function (d) {
+		  			return projection([d.lon, d.lat])[0];
+		  		})
+		  	  	.attr("cy", function (d) {
+		  	  		return projection([d.lon, d.lat])[1];
+		  	  	})
+				.attr("r", function (d) {
+					return d.reading/80;
+				})
+				.style("fill", function(d){
+					return getReadingColor(d.reading);
+				})
+		    });
+		    }
+			
+						
+</script>
